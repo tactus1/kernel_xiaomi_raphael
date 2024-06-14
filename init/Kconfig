@@ -957,6 +957,12 @@ config UCLAMP_TASK_GROUP
 
 	  If in doubt, say N.
 
+config UCLAMP_ASSIST
+	bool "UClamp configuration helper"
+	depends on ANDROID && UCLAMP_TASK && UCLAMP_TASK_GROUP
+	help
+	  This option enabled in-kernel uclamp setting overrides
+
 config CGROUP_PIDS
 	bool "PIDs controller"
 	help
@@ -1219,13 +1225,6 @@ config SCHED_TUNE
 	  utilization-driven frequency selection is in use).
 
 	  If unsure, say N.
-
-config SCHED_TUNE_DUMMY
-	bool "Create dummy SCHEDTUNE nodes"
-	depends on SMP
-	depends on !SCHED_TUNE && !CGROUP_SCHEDTUNE
-	help
-	  Create dummy SCHEDTUNE nodes.
 
 config DEFAULT_USE_ENERGY_AWARE
 	bool "Default to enabling the Energy Aware Scheduler feature"

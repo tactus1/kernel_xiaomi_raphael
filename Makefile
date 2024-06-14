@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 VERSION = 4
 PATCHLEVEL = 14
-SUBLEVEL = 344
+SUBLEVEL = 348
 EXTRAVERSION = -openela
 NAME = Petit Gorille
 
@@ -739,7 +739,7 @@ export LLVM_AR LLVM_NM
 # Set O3 optimization level for LTO with most linkers
 LDFLAGS		+= -O3
 LDFLAGS		+= --plugin-opt=O3
-LDFLAGS		+= --plugin-opt=-import-instr-limit=40
+LDFLAGS		+= --lto-O3
 endif
 
 
@@ -761,11 +761,8 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, attribute-alias)
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS   += -Os
 else
-KBUILD_CFLAGS   += -O2
-ifeq ($(cc-name),gcc)
-KBUILD_CFLAGS	+= -mcpu=cortex-a76.cortex-a55 -mtune=cortex-a76.cortex-a55
-endif
 ifeq ($(cc-name),clang)
+KBUILD_CFLAGS   += -O3
 #Enable fast FMA optimizations
 KBUILD_CFLAGS   += -ffp-contract=fast
 #Enable MLGO for register allocation.
@@ -794,11 +791,15 @@ ifdef CONFIG_LD_DEAD_CODE_DATA_ELIMINATION
 KBUILD_CFLAGS	+= -mllvm -polly-run-dce
 endif
 endif
-endif
-endif
 
-ifdef CONFIG_MINIMAL_TRACING_FOR_IORAP
-KBUILD_CFLAGS   += -DNOTRACE
+KBUILD_CFLAGS  += -mllvm -inline-threshold=1300
+KBUILD_CFLAGS  += -mllvm -inlinehint-threshold=2000
+KBUILD_CFLAGS  += -mllvm -unroll-threshold=900
+
+else
+KBUILD_CFLAGS   += -O2
+KBUILD_CFLAGS	+= -mcpu=cortex-a76.cortex-a55 -mtune=cortex-a76.cortex-a55
+endif
 endif
 
 # Tell gcc to never replace conditional load with a non-conditional one
@@ -880,6 +881,7 @@ ifeq ($(ld-name),lld)
 KBUILD_LDFLAGS  += -mllvm -mcpu=cortex-a76
 LDFLAGS += --lto-O3
 LDFLAGS += -mllvm -regalloc-enable-advisor=release
+LDFLAGS += -mllvm -enable-ml-inliner=release
 endif
 
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-const-variable)
@@ -980,15 +982,12 @@ lto-clang-flags	:= -flto
 endif
 lto-clang-flags += -fvisibility=default $(call cc-option, -fsplit-lto-unit)
 
-lto-clang-flags += -fwhole-program-vtables
-lto-clang-flags += -fsplit-machine-functions
-
 KBUILD_LDFLAGS_MODULE += -T scripts/module-lto.lds
 
 KBUILD_LDS_MODULE += $(srctree)/scripts/module-lto.lds
 
 # allow disabling only clang LTO where needed
-DISABLE_LTO_CLANG := -fno-lto -fno-whole-program-vtables
+DISABLE_LTO_CLANG := -fno-lto
 export DISABLE_LTO_CLANG
 endif
 
